@@ -1,139 +1,162 @@
 import streamlit as st
-import streamlit.components.v1 as components
+import pandas as pd
 
-st.set_page_config(page_title="배사메무초 영어학원 홍보 카피", layout="centered")
-st.title("📣 배사메무초 영어학원 — 3채널 홍보 카피")
-st.caption("여름방학 특강 · 조기등록 20% 할인 · 초등 6학년 중등 선행반")
+st.set_page_config(
+    page_title="카페 고객 피드백 대시보드",
+    page_icon="☕",
+    layout="wide",
+)
 
-html_content = """
+st.markdown("""
 <style>
-  body { font-family: sans-serif; margin: 0; padding: 0; }
-  .wrap { padding: 1rem 0; display: flex; flex-direction: column; gap: 1.5rem; }
-  .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; }
-  .card-header { display: flex; align-items: center; gap: 10px; padding: 0.75rem 1.25rem; border-bottom: 1px solid #e0e0e0; background: #fafafa; }
-  .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
-  .blog-badge { background: #e3f2fd; color: #1565c0; }
-  .insta-badge { background: #fce4ec; color: #880e4f; }
-  .kakao-badge { background: #fff9c4; color: #795548; }
-  .channel-label { font-size: 14px; font-weight: 600; color: #111; }
-  .char-count { margin-left: auto; font-size: 12px; color: #999; }
-  .card-body { padding: 1.25rem; position: relative; }
-  .card-body p { font-size: 14px; line-height: 1.9; color: #222; margin: 0; white-space: pre-line; }
-  .tags { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag { font-size: 12px; color: #1565c0; }
-  .blog-title { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 0.75rem; }
-  .tip { font-size: 12px; color: #999; margin-top: 0.75rem; line-height: 1.6; }
-  .copy-btn {
-    margin-top: 1rem;
-    padding: 6px 14px;
-    font-size: 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    background: #f5f5f5;
-    cursor: pointer;
-    color: #444;
-  }
-  .copy-btn:hover { background: #e8e8e8; }
-  .copy-btn.copied { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+    .block-container { padding-top: 3.5rem; padding-bottom: 1rem; }
+
+    .main-title { font-size: 1.9rem; font-weight: 800; color: #1a1a1a; margin-bottom: 2px; }
+    .sub-title   { font-size: 0.88rem; color: #888; margin-bottom: 0; }
+    .section-label {
+        font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em;
+        text-transform: uppercase; color: #999; margin: 20px 0 10px;
+    }
+
+    /* ── 유형 카드 ── */
+    .m-card {
+        border-radius: 14px; padding: 22px 16px 18px;
+        text-align: center; color: white;
+    }
+    .m-num   { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+    .m-label { font-size: 1.05rem; margin-top: 6px; opacity: 0.93; font-weight: 600; }
+    .m-sub   { font-size: 0.78rem; opacity: 0.75; margin-top: 3px; }
+
+    /* ── 긴급 카드 ── */
+    .u-card {
+        background: #fff8f8;
+        border: 1.8px solid #fca5a5;
+        border-radius: 14px;
+        padding: 18px 18px 16px;
+        height: 100%;
+    }
+    .u-rank {
+        display: inline-block;
+        background: #ef4444; color: white;
+        font-size: 0.7rem; font-weight: 700;
+        border-radius: 99px; padding: 2px 10px;
+        margin-bottom: 10px; letter-spacing: 0.05em;
+    }
+    .u-meta {
+        font-size: 0.78rem; color: #aaa; margin-bottom: 8px;
+    }
+    .u-meta b { color: #666; }
+    .u-content {
+        font-size: 0.93rem; line-height: 1.6; color: #222;
+        background: white; border-radius: 8px;
+        padding: 10px 12px; margin: 8px 0;
+        border: 1px solid #f1f1f1;
+    }
+    .u-reason {
+        font-size: 0.81rem; color: #b91c1c;
+        background: #fef2f2; border-left: 3px solid #ef4444;
+        padding: 6px 10px; border-radius: 0 6px 6px 0; margin-top: 8px;
+    }
+
+    div[data-testid="stHorizontalBlock"] > div { gap: 0.6rem !important; }
 </style>
+""", unsafe_allow_html=True)
 
-<div class="wrap">
 
-  <!-- 블로그 -->
-  <div class="card">
-    <div class="card-header">
-      <span class="channel-label">✏️ 블로그</span>
-      <span class="badge blog-badge">정보형 · 500자+</span>
-      <span class="char-count">~560자</span>
-    </div>
-    <div class="card-body">
-      <div class="blog-title">☀️ 초6 학부모님, 이번 여름이 중학 영어의 분기점입니다 — 배사메무초 영어학원 여름방학 특강 조기등록 20% 할인</div>
-      <p id="blog-text">중학교 입학 후 영어 때문에 힘들어하는 아이들, 공통점이 있습니다. 초6 여름방학을 그냥 보냈다는 것.
+# ── 데이터 로드 ──────────────────────────────────────────
+@st.cache_data
+def load_data():
+    return pd.read_csv("Day3_과제_feedback_v.2.csv", dtype=str)
 
-배사메무초 영어학원의 이번 여름방학 특강은 초등 6학년을 위한 중등 영어 선행학습 반으로, 중1 교과 어휘·문법·독해를 미리 체계적으로 잡아드립니다.
+df = load_data()
 
-📌 특강 커리큘럼
-• 중1 핵심 문법 완성 (시제·문장 구조·품사)
-• 중등 필수 어휘 600 집중 암기
-• 지문 독해 훈련 및 서술형 대비
-• 소수 정예 운영으로 밀착 관리
+date_min = df["받은날짜"].min()
+date_max = df["받은날짜"].max()
 
-🎯 조기등록 혜택
-7월 5일까지 등록하시면 수강료 20% 즉시 할인!
-마감 후에는 정가로만 등록 가능하니 서두르세요.
+# ── 헤더 ─────────────────────────────────────────────────
+st.markdown('<p class="main-title">☕ 카페 고객 피드백 대시보드</p>', unsafe_allow_html=True)
+st.markdown(
+    f'<p class="sub-title">총 {len(df)}건 &nbsp;·&nbsp; {date_min} – {date_max}</p>',
+    unsafe_allow_html=True,
+)
+st.divider()
 
-중학교 첫 영어 시험, 자신 있게 시작하고 싶은 아이라면 지금이 기회입니다.
-배사메무초 영어학원으로 상담 문의 주세요 📞</p>
-      <button class="copy-btn" onclick="copyText('blog-text', this)">📋 복사</button>
-      <div class="tip">💡 추천 키워드: '초6 중등영어 선행', '배사메무초 영어학원 여름방학 특강', '초등 영어학원 조기등록 할인'</div>
-    </div>
-  </div>
 
-  <!-- 인스타그램 -->
-  <div class="card">
-    <div class="card-header">
-      <span class="channel-label">📸 인스타그램</span>
-      <span class="badge insta-badge">감성형 · 150자 이내</span>
-      <span class="char-count">~128자</span>
-    </div>
-    <div class="card-body">
-      <p id="insta-text">초6, 이 여름이 중학 영어를 결정합니다 ☀️
-배사메무초 영어학원 여름방학 특강
-중등 선행반 조기등록 — 7월 5일까지 20% 할인.
-먼저 시작한 아이가 중1 첫 시험을 웃습니다 ✏️</p>
-      <div class="tags">
-        <span class="tag">#배사메무초영어학원</span>
-        <span class="tag">#여름방학특강</span>
-        <span class="tag">#초6영어</span>
-        <span class="tag">#중등영어선행</span>
-        <span class="tag">#조기등록할인</span>
-        <span class="tag">#중1영어준비</span>
-        <span class="tag">#초등영어학원</span>
-        <span class="tag">#방학공부</span>
-      </div>
-      <button class="copy-btn" onclick="copyText('insta-text', this)">📋 복사</button>
-      <div class="tip">💡 피드 이미지: "중1 첫 시험, 이미 준비된 아이가 있습니다" 카드뉴스 + 20% 강조 디자인 추천</div>
-    </div>
-  </div>
+# ── 1. 유형별 카드 ────────────────────────────────────────
+st.markdown('<p class="section-label">유형별 피드백 현황</p>', unsafe_allow_html=True)
 
-  <!-- 카카오채널 -->
-  <div class="card">
-    <div class="card-header">
-      <span class="channel-label">💬 카카오채널</span>
-      <span class="badge kakao-badge">친근형 · 180자 이내</span>
-      <span class="char-count">~162자</span>
-    </div>
-    <div class="card-body">
-      <p id="kakao-text">☀️ [여름방학 특강 조기등록 안내]
-
-안녕하세요, 배사메무초 영어학원입니다 😊
-초6 중등 영어 선행반 특강 오픈했어요!
-
-✅ 7월 5일까지 조기등록 → 20% 할인
-✅ 선착순 마감 — 자리 얼마 안 남았어요!
-
-중1 올라가기 전 이번 여름, 딱 한 번의 기회예요 🙌
-궁금하신 점은 채팅으로 편하게 물어보세요 👇</p>
-      <button class="copy-btn" onclick="copyText('kakao-text', this)">📋 복사</button>
-      <div class="tip">💡 발송 타이밍: 평일 오전 10~11시 또는 오후 7~8시 / 마감 3일 전 리마인드 1회 추가 권장</div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-function copyText(id, btn) {
-  const text = document.getElementById(id).innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = '✅ 복사됨!';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = '📋 복사';
-      btn.classList.remove('copied');
-    }, 2000);
-  });
+counts = df["유형"].value_counts().to_dict()
+TYPE_STYLE = {
+    "불만": ("#ef4444", "📣", "부정 감정 위주"),
+    "요청": ("#3b82f6", "💡", "개선 제안 포함"),
+    "칭찬": ("#22c55e", "⭐", "긍정 감정 위주"),
+    "문의": ("#f59e0b", "❓", "정보 확인 필요"),
 }
-</script>
-"""
 
-components.html(html_content, height=1500, scrolling=True)
+cols = st.columns(4, gap="small")
+for col, (label, (color, icon, desc)) in zip(cols, TYPE_STYLE.items()):
+    with col:
+        st.markdown(f"""
+        <div class="m-card" style="background:{color};">
+            <div class="m-num">{counts.get(label, 0)}</div>
+            <div class="m-label">{icon} {label}</div>
+            <div class="m-sub">{desc}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+st.divider()
+
+
+# ── 2. 긴급 불만 TOP 3 ────────────────────────────────────
+st.markdown('<p class="section-label">🚨 긴급 불만 TOP 3</p>', unsafe_allow_html=True)
+
+KEYWORDS = {
+    "오류": "앱·시스템 오류",
+    "환불": "환불 요청",
+    "기다": "대기 불만",
+    "안 울": "진동벨 미작동",
+    "잘못": "주문 오류",
+}
+
+def score_row(row):
+    if row["유형"] != "불만":
+        return 0, []
+    score, reasons = 0, []
+    if str(row["별점"]) == "1":
+        score += 2
+        reasons.append("별점 1점")
+    for kw, label in KEYWORDS.items():
+        if kw in str(row["내용"]):
+            score += 1
+            reasons.append(f"{label} ({kw!r})")
+    return score, reasons
+
+scored = []
+for _, row in df.iterrows():
+    s, r = score_row(row)
+    if s > 0:
+        scored.append({**row.to_dict(), "_score": s, "_reasons": r})
+
+top3 = sorted(scored, key=lambda x: (-x["_score"], int(x["id"])))[:3]
+
+if top3:
+    cols = st.columns(len(top3), gap="small")
+    rank_labels = ["🥇 1위", "🥈 2위", "🥉 3위"]
+    for col, item, rank in zip(cols, top3, rank_labels):
+        reasons_str = " &nbsp;·&nbsp; ".join(item["_reasons"])
+        with col:
+            st.markdown(f"""
+            <div class="u-card">
+                <span class="u-rank">{rank} 긴급</span>
+                <div class="u-meta">
+                    <b>ID #{item['id']}</b> &nbsp;·&nbsp;
+                    경로 {item['경로']} &nbsp;·&nbsp;
+                    별점 {item['별점']}
+                </div>
+                <div class="u-content">{item['내용']}</div>
+                <div class="u-reason">⚡ {reasons_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
+else:
+    st.info("긴급 불만 항목이 없습니다.")
