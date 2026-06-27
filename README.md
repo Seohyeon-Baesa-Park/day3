@@ -1,1 +1,1 @@
-![VOC Dashboard](voc_dashboard.png)
+![VOC Dashboard](voc_dashboard .png)
