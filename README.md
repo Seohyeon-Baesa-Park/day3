@@ -1,1 +1,1 @@
-![VOC Dashboard](스크린샷 2026-06-27 23.54.03)
+![VOC Dashboard](voc_dashboard.png)
